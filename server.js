@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { lookup } = require('node:dns').promises;
 const nodemailer = require('nodemailer');
 
 // Load local development settings without adding another runtime dependency.
@@ -38,11 +39,13 @@ async function sendOtpEmail({ to, code }) {
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, '');
   if (!user || !pass) throw new Error('Email OTP is not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD on the server.');
+  const { address: gmailIpv4 } = await lookup('smtp.gmail.com', { family: 4 });
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+    service: 'gmail',
+    host: gmailIpv4,
     port: 465,
     secure: true,
-    family: 4,
+    tls: { servername: 'smtp.gmail.com' },
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
