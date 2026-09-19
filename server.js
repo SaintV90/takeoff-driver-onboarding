@@ -133,11 +133,24 @@ async function api(req, res) {
 }
 http.createServer((req, res) => {
   if (req.url.startsWith('/api/')) return api(req, res);
-  const staticDir = fs.existsSync(path.join(__dirname, 'public'))
-  ? path.join(__dirname, 'public')
-  : __dirname;
-const target = path.join(staticDir, file);
-
-if (!target.startsWith(staticDir) || !fs.existsSync(target)) {
   const file = req.url === '/' ? 'index.html' : req.url.slice(1).split('?')[0];
-  
+  // Support local development (assets in /public) and the current GitHub
+  // layout (assets at the repository root) without changing app URLs.
+  const staticDir = fs.existsSync(path.join(__dirname, 'public'))
+    ? path.join(__dirname, 'public')
+    : __dirname;
+  const target = path.join(staticDir, file);
+
+  if (!target.startsWith(staticDir) || !fs.existsSync(target)) {
+    res.writeHead(404);
+    return res.end('Not found');
+  }
+
+  const type = file.endsWith('.css')
+    ? 'text/css'
+    : file.endsWith('.js')
+      ? 'application/javascript'
+      : 'text/html';
+  res.writeHead(200, { 'Content-Type': type });
+  fs.createReadStream(target).pipe(res);
+}).listen(PORT, () => console.log(`TakeOFF running on port ${PORT}`));
