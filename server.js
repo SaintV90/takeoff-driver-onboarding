@@ -36,6 +36,23 @@ function validateApplication(input) {
 }
 
 async function sendOtpEmail({ to, code }) {
+  const brevoKey = process.env.BREVO_API_KEY;
+  const brevoSender = process.env.BREVO_SENDER_EMAIL;
+  if (brevoKey && brevoSender) {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender: { name: 'TakeOFF', email: brevoSender },
+        to: [{ email: to }],
+        subject: 'Your TakeOFF verification code',
+        textContent: `Your TakeOFF verification code is ${code}. It expires in 10 minutes. Do not share this code with anyone.`,
+      }),
+    });
+    if (!response.ok) throw new Error(`Brevo email delivery failed (${response.status}).`);
+    return response.json();
+  }
+
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, '');
   if (!user || !pass) throw new Error('Email OTP is not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD on the server.');
@@ -159,3 +176,4 @@ http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': type });
   fs.createReadStream(target).pipe(res);
 }).listen(PORT, () => console.log(`TakeOFF running on port ${PORT}`));
+
