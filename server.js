@@ -39,7 +39,10 @@ async function sendOtpEmail({ to, code }) {
   const pass = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, '');
   if (!user || !pass) throw new Error('Email OTP is not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD on the server.');
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    family: 4,
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
